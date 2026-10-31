@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจองคิวสนามยิงปืน (Offline)</title>
+    <!-- โหลดไลบรารี QRCode.js สำหรับสร้าง QR Code อัตโนมัติ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif, Tahoma; background: #f4f6f9; margin: 0; padding: 15px; color: #333; }
+        h1, h2, h3 { text-align: center; color: #2c3e50; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        button { background: #3498db; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        
+        /* ปุ่มแอดมินมุมบนขวา */
+        .admin-btn-corner {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            width: auto;
+            cursor: pointer;
+        }
+        .admin-btn-corner:hover { background: #2c3e50; }
+
+        .hidden { display: none; }
+        .queue-box { display: flex; flex-direction: column; gap: 15px; }
+        .queue-col { background: #ecf0f1; padding: 15px; border-radius: 6px; }
+        .queue-item { background: white; padding: 10px; margin: 8px 0; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #3498db; }
+        .badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        .btn-action { width: auto; padding: 6px 12px; font-size: 14px; margin: 0 2px; }
+        .btn-call { background: #27ae60; }
+        .btn-del { background: #c0392b; }
+        
+        /* กล่องแสดง QR Code ของแอดมิน */
+        .qr-box { background: #fdfdfd; border: 1px dashed #ccc; padding: 15px; border-radius: 6px; margin-bottom: 15px; text-align: center; }
+        #adminQRCode { display: flex; justify-content: center; margin: 10px 0; }
+        #adminQRCode img { padding: 5px; background: white; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- ส่วนที่ 1: หน้าลงทะเบียน (สำหรับผู้เข้าร่วมสแกน) -->
+    <div id="viewRegister" class="container">
+        <!-- ปุ่มไปหน้าแอดมินมุมบนขวา -->
+        <button class="admin-btn-corner" onclick="openAdmin()">⚙️ แอดมิน</button>
+        
+        <h1>🎯 ลงทะเบียนจองคิวสนามยิงปืน</h1>
+        <form id="registerForm">
+            <input type="text" id="name" placeholder="ชื่อ-นามสกุล / ชื่อเล่น" required>
+            <select id="gunType">
+                <option value="ปืนสั้น">ปืนสั้น</option>
+                <option value="ปืนยาว">ปืนยาว</option>
+            </select>
+            <select id="round">
+                <option value="1">รอบที่ 1</option>
+                <option value="2">รอบที่ 2</option>
+            </select>
+            <button type="submit">รับบัตรคิว</button>
+        </form>
+        <div id="result" style="margin-top: 15px; text-align: center; font-weight: bold; color: #27ae60;"></div>
+    </div>
+
+    <!-- ส่วนที่ 2: หน้าจัดการคิวสำหรับแอดมิน (ต้องใส่รหัสผ่าน) -->
+    <div id="viewAdmin" class="container hidden">
+        <h2>🔒 จัดการคิว (สำหรับเจ้าหน้าที่)</h2>
+        <button onclick="backToRegister()" style="background: #95a5a6; margin-bottom: 15px;">⬅ กลับสู่หน้าลงทะเบียน</button>
+        
+        <!-- กล่องสร้าง QR Code อัตโนมัติจากลิงก์ปัจจุบัน -->
+        <div class="qr-box">
+            <h3 style="margin: 0 0 5px 0; color: #2c3e50;">🖨️ QR Code ให้ผู้เข้าร่วมสแกน</h3>
+            <p style="font-size: 13px; color: #666; margin-top:0;">สร้างจากลิงก์ของเครื่องนี้โดยอัตโนมัติ</p>
+            <div id="adminQRCode"></div>
+            <button onclick="generateAdminQR()" style="background: #3498db; width: auto; padding: 6px 12px; font-size: 13px;">รีเฟรช QR Code</button>
+        </div>
+
+        <div class="queue-box">
+            <div class="queue-col">
+                <h3 style="color: #2980b9; margin-top:0;">📌 คิวปืนสั้น</h3>
+                <div id="shortQueueList">กำลังโหลด...</div>
+            </div>
+            <div class="queue-col">
+                <h3 style="color: #8e44ad; margin-top:0;">📌 คิวปืนยาว</h3>
+                <div id="longQueueList">กำลังโหลด...</div>
+            </div>
+        </div>
+        <button onclick="resetData()" style="background: #e74c3c; margin-top: 20px;">รีเซ็ตข้อมูลทั้งหมด</button>
+    </div>
+
+    <script>
+        let queues = JSON.parse(localStorage.getItem('shooting_queues')) || [];
+
+        // ฟังก์ชันตรวจสอบรหัสผ่านเพื่อเข้าหน้าแอดมิน
+        function openAdmin() {
+            const password = prompt('กรุณากรอกรหัสผ่านผู้ดูแลระบบ:');
+            if (password === 'shooting888') {
+                document.getElementById('viewRegister').classList.add('hidden');
+                document.getElementById('viewAdmin').classList.remove('hidden');
+                renderQueues();
+                generateAdminQR(); // สร้าง QR Code ทันทีที่เข้าหน้าแอดมิน
+            } else if (password !== null) {
+                alert('รหัสผ่านไม่ถูกต้อง!');
+            }
+        }
+
+        // กลับหน้าลงทะเบียน
+        function backToRegister() {
+            document.getElementById('viewAdmin').classList.add('hidden');
+            document.getElementById('viewRegister').classList.remove('hidden');
+        }
+
+        // ฟังก์ชันสร้าง QR Code อัตโนมัติจาก URL ปัจจุบัน
+        function generateAdminQR() {
+            const qrContainer = document.getElementById('adminQRCode');
+            qrContainer.innerHTML = ''; // ล้างค่าเก่า
+            
+            // ดึง URL ปัจจุบัน และตัด index.html ออกเพื่อให้เป็นลิงก์หน้าหลัก
+            let currentUrl = window.location.href;
+            if (currentUrl.includes('index.html')) {
+                currentUrl = currentUrl.replace('index.html', '');
+            }
+            
+            new QRCode(qrContainer, {
+                text: currentUrl,
+                width: 160,
+                height: 160,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        // บันทึกการลงทะเบียนจากผู้เข้าร่วม
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const gunType = document.getElementById('gunType').value;
+            const round = document.getElementById('round').value;
+
+            let totalCount = parseInt(localStorage.getItem('shooting_total_count')) || 0;
+            totalCount++;
+            localStorage.setItem('shooting_total_count', totalCount);
+
+            const newQueue = {
+                id: totalCount,
+                name: name,
+                gunType: gunType,
+                round: round,
+                status: 'รอเรียก'
+            };
+
+            queues.push(newQueue);
+            saveData();
+
+            const waitingBefore = queues.filter(q => q.gunType === gunType && q.status === 'รอเรียก' && q.id < totalCount).length;
+
+            document.getElementById('result').innerHTML = `ลงทะเบียนสำเร็จ!<br>เลขคิวของคุณ: <span style="font-size:24px; color:#e74c3c;">#${totalCount}</span><br>(${gunType} - รอบที่ ${round})<br>จำนวนคิวก่อนหน้า: ${waitingBefore} คิว`;
+            document.getElementById('name').value = '';
+        });
+
+        function saveData() {
+            localStorage.setItem('shooting_queues', JSON.stringify(queues));
+        }
+
+        function renderQueues() {
+            queues = JSON.parse(localStorage.getItem('shooting_queues')) || [];
+            const shortList = document.getElementById('shortQueueList');
+            const longList = document.getElementById('longQueueList');
+            shortList.innerHTML = '';
+            longList.innerHTML = '';
+
+            let hasShort = false;
+            let hasLong = false;
+
+            queues.forEach((q) => {
+                if (q.status === 'เสร็จสิ้น') return;
+
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                item.innerHTML = `
+                    <div>
+                        <b>#${q.id}</b> ${q.name} <span class="badge">รอบ ${q.round}</span><br>
+                        <small>สถานะ: <span style="color:${q.status === 'กำลังยิง' ? '#e67e22':'#27ae60'}">${q.status}</span></small>
+                    </div>
+                    <div>
+                        <button class="btn-action btn-call" onclick="updateStatus(${q.id})">${q.status === 'รอเรียก' ? 'เรียก' : 'เสร็จสิ้น'}</button>
+                        <button class="btn-action btn-del" onclick="deleteQueue(${q.id})">ข้าม/ลบ</button>
+                    </div>
+                `;
+
+                if (q.gunType === 'ปืนสั้น') {
+                    hasShort = true;
+                    shortList.appendChild(item);
+                } else {
+                    hasLong = true;
+                    longList.appendChild(item);
+                }
+            });
+
+            if (!hasShort) shortList.innerHTML = '<p style="color:#7f8c8d; text-align:center;">ไม่มีคิวรอ</p>';
+            if (!hasLong) longList.innerHTML = '<p style="color:#7f8c8d; text-align:center;">ไม่มีคิวรอ</p>';
+        }
+
+        function updateStatus(id) {
+            const q = queues.find(item => item.id === id);
+            if (q) {
+                q.status = (q.status === 'รอเรียก') ? 'กำลังยิง' : 'เสร็จสิ้น';
+                saveData();
+                renderQueues();
+            }
+        }
+
+        function deleteQueue(id) {
+            const q = queues.find(item => item.id === id);
+            if (q) {
+                q.status = 'เสร็จสิ้น';
+                saveData();
+                renderQueues();
+            }
+        }
+
+        function resetData() {
+            if (confirm('ต้องการล้างข้อมูลคิวทั้งหมดใช่หรือไม่?')) {
+                localStorage.clear();
+                queues = [];
+                renderQueues();
+                alert('รีเซ็ตเรียบร้อยแล้ว');
+            }
+        }
+
+        // อัปเดตหน้าแอดมินอัตโนมัติทุกๆ 2 วินาที
+        setInterval(() => {
+            if (!document.getElementById('viewAdmin').classList.contains('hidden')) {
+                renderQueues();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
