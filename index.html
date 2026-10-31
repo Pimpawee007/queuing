@@ -13,7 +13,7 @@
     
 </head>
 <body>
-    <!-- ส่วนที่ 1: หน้าลงทะเบียน (สำหรับผู้เข้าร่วมสแกน) -->
+    <!-- ส่วนที่ 1: หน้าลงทะเบียน (สำหรับผู้เข้าร่วมใช้งานที่หน้าโต๊ะ) -->
     <div id="viewRegister" class="container">
         <!-- ปุ่มไปหน้าแอดมินมุมบนขวา -->
         <button class="admin-btn-corner" onclick="openAdmin()">⚙️ Admin</button>
@@ -21,22 +21,22 @@
         <img src="mushlogo.png" alt="Club's logo" width="100">
         <h1>🎯 ลงทะเบียนคิว</h1>
         <h1 id="clubname">MU Shooting Club</h1>
-        <h4>Ququing System for MU Shooting Club</h4>
+        <h4>Queuing System for MU Shooting Club</h4>
         <form id="registerForm">
             <input type="text" id="name" placeholder="ชื่อเล่น/Nickname" required>
-            <select id="gunType">
+            <select id="gunType" required>
                 <option value="" selected disabled>ประเภทปืน/Gun Type</option>
                 <option value="ปืนสั้น">ปืนสั้น/Air Pistol</option>
                 <option value="ปืนยาว">ปืนยาว/Air Rifle</option>
             </select>
-            <select id="round">
+            <select id="round" required>
                 <option value="" selected disabled>รอบที่ยิง/Round</option>
                 <option value="1">รอบที่ 1/Round 1</option>
                 <option value="2">รอบที่ 2/Round 2</option>
             </select>
             <button type="submit">OK</button>
         </form>
-        <div id="result" style="margin-top: 15px; text-align: center; font-weight: bold; color: #27ae60;"></div>
+        <div id="result" style="margin-top: 15px; text-align: center; font-weight: bold; color: #27ae60; min-height: 80px;"></div>
     </div>
 
     <!-- ส่วนที่ 2: หน้าจัดการคิวสำหรับแอดมิน (ต้องใส่รหัสผ่าน) -->
@@ -44,10 +44,9 @@
         <h2 style="color: #e74c3c;">🔒 จัดการคิว (STAFF ONLY)</h2>
         <button onclick="backToRegister()" style="background: #95a5a6; margin-bottom: 15px;">⬅ กลับสู่หน้าลงทะเบียน</button>
         
-        <!-- กล่องสร้าง QR Code อัตโนมัติจากลิงก์ปัจจุบัน -->
+        <!-- กล่องสร้าง QR Code (อาจไม่จำเป็นแล้ว แต่เก็บไว้เผื่อฉุกเฉิน) -->
         <div class="qr-box">
-            <h3 style="margin: 0 0 5px 0; color: #2c3e50;">🖨️ QR Code ให้ Walk-in สแกน</h3>
-            <p style="font-size: 13px; color: #666; margin-top:0;">สร้างจากลิงก์ของเครื่องนี้โดยอัตโนมัติ</p>
+            <h3 style="margin: 0 0 5px 0; color: #2c3e50;">🖨️ QR Code (สำรอง)</h3>
             <div id="adminQRCode"></div>
             <button onclick="generateAdminQR()" style="background: #3dba3d; width: auto; padding: 6px 12px; font-size: 13px;">รีเฟรช QR Code</button>
         </div>
@@ -67,16 +66,28 @@
 
     <script>
         let queues = JSON.parse(localStorage.getItem('shooting_queues')) || [];
+        var count = 0;
+
+        // เช็คว่าก่อนหน้านี้ค้างอยู่หน้าแอดมินหรือไม่
+        window.onload = function() {
+            if (sessionStorage.getItem('currentView') === 'admin') {
+                document.getElementById('viewRegister').classList.add('hidden');
+                document.getElementById('viewAdmin').classList.remove('hidden');
+                renderQueues();
+                generateAdminQR();
+            }
+        };
 
         // ฟังก์ชันตรวจสอบรหัสผ่านเพื่อเข้าหน้าแอดมิน
-        var count = 0
         function openAdmin() {
             const password = prompt('กรอก Password (STAFF ONLY):');
             if (password === 'shooting888') {
                 document.getElementById('viewRegister').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
+                sessionStorage.setItem('currentView', 'admin'); // จำสถานะหน้าแอดมิน
+                count = 0; // รีเซ็ตการนับเมื่อพิมพ์ถูก
                 renderQueues();
-                generateAdminQR(); // สร้าง QR Code ทันทีที่เข้าหน้าแอดมิน
+                generateAdminQR(); 
             } else if (password !== null) {
                 count += 1;
                 if (count === 1) {
@@ -86,8 +97,8 @@
                     alert ('เอ๊ะ! ผิดอีกแล้วนะ...ลองคิดดี ๆ');
                 } else if (count === 3) {
                     alert ('ครั้งที่ 4 นี่อย่าให้มีนะ');
-                } else if (count === 4) {
-                    alert ('ไม่ใช่ละ ๆ นี่มันตัวปลอม!')
+                } else if (count >= 4) {
+                    alert ('ไม่ใช่ละ ๆ นี่มันตัวปลอม!');
                 }
             }
         }
@@ -96,14 +107,14 @@
         function backToRegister() {
             document.getElementById('viewAdmin').classList.add('hidden');
             document.getElementById('viewRegister').classList.remove('hidden');
+            sessionStorage.removeItem('currentView'); // ล้างสถานะหน้าแอดมิน
         }
 
-        // ฟังก์ชันสร้าง QR Code อัตโนมัติจาก URL ปัจจุบัน
+        // ฟังก์ชันสร้าง QR Code
         function generateAdminQR() {
             const qrContainer = document.getElementById('adminQRCode');
-            qrContainer.innerHTML = ''; // ล้างค่าเก่า
+            qrContainer.innerHTML = ''; 
             
-            // ดึง URL ปัจจุบัน และตัด index.html ออกเพื่อให้เป็นลิงก์หน้าหลัก
             let currentUrl = window.location.href;
             if (currentUrl.includes('index.html')) {
                 currentUrl = currentUrl.replace('index.html', '');
@@ -119,7 +130,7 @@
             });
         }
 
-        // บันทึกการลงทะเบียนจากผู้เข้าร่วม
+        // บันทึกการลงทะเบียน
         document.getElementById('registerForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const name = document.getElementById('name').value.trim();
@@ -143,8 +154,18 @@
 
             const waitingBefore = queues.filter(q => q.gunType === gunType && q.status === 'รอเรียก' && q.id < totalCount).length;
 
+            // แสดงผลการลงทะเบียน
             document.getElementById('result').innerHTML = `ลงทะเบียนสำเร็จ!<br>เลขคิวของคุณ: <span style="font-size:24px; color:#e74c3c;">#${totalCount}</span><br>(${gunType} - รอบที่ ${round})<br>จำนวนคิวก่อนหน้า: ${waitingBefore} คิว`;
+            
+            // ล้างค่าในช่องกรอกข้อมูลให้พร้อมสำหรับคนถัดไป
             document.getElementById('name').value = '';
+            document.getElementById('gunType').value = '';
+            document.getElementById('round').value = '';
+
+            // เคลียร์ข้อความแสดงผลอัตโนมัติใน 5 วินาที
+            setTimeout(() => {
+                document.getElementById('result').innerHTML = '';
+            }, 5000);
         });
 
         function saveData() {
