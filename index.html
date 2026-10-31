@@ -3,92 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจอง MU Shooting Club</title>
-    <link rel="x-icon" type="image/x-icon" href="logo.jpg">
-    <!-- โหลดไลบรารี QRCode.js สำหรับสร้าง QR Code อัตโนมัติ -->
+    <title>ระบบคิว MU Shooting Club</title>
+    <link rel="icon" type="image/png" href="mushlogo.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@100..700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        body { font-family: sans-serif, Tahoma; background: #f4f6f9; margin: 0; padding: 15px; color: #333; }
-        h1, h2, h3 { text-align: center; color: #2c3e50; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
-        button { background: #3498db; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #2980b9; }
-        
-        /* ปุ่มแอดมินมุมบนขวา */
-        .admin-btn-corner {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #7f8c8d;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 4px;
-            width: auto;
-            cursor: pointer;
-        }
-        .admin-btn-corner:hover { background: #2c3e50; }
-
-        .hidden { display: none; }
-        .queue-box { display: flex; flex-direction: column; gap: 15px; }
-        .queue-col { background: #ecf0f1; padding: 15px; border-radius: 6px; }
-        .queue-item { background: white; padding: 10px; margin: 8px 0; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #3498db; }
-        .badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-        .btn-action { width: auto; padding: 6px 12px; font-size: 14px; margin: 0 2px; }
-        .btn-call { background: #27ae60; }
-        .btn-del { background: #c0392b; }
-        
-        /* กล่องแสดง QR Code ของแอดมิน */
-        .qr-box { background: #fdfdfd; border: 1px dashed #ccc; padding: 15px; border-radius: 6px; margin-bottom: 15px; text-align: center; }
-        #adminQRCode { display: flex; justify-content: center; margin: 10px 0; }
-        #adminQRCode img { padding: 5px; background: white; border: 1px solid #ddd; border-radius: 4px; }
-    </style>
+    
 </head>
 <body>
-
     <!-- ส่วนที่ 1: หน้าลงทะเบียน (สำหรับผู้เข้าร่วมสแกน) -->
     <div id="viewRegister" class="container">
         <!-- ปุ่มไปหน้าแอดมินมุมบนขวา -->
-        <button class="admin-btn-corner" onclick="openAdmin()">⚙️ แอดมิน</button>
+        <button class="admin-btn-corner" onclick="openAdmin()">⚙️ Admin</button>
         
-        <h1>🎯 ลงทะเบียนจองคิวสนามยิงปืน</h1>
+        <img src="mushlogo.png" alt="Club's logo" width="100">
+        <h1>🎯 ลงทะเบียนคิว</h1>
+        <h1 id="clubname">MU Shooting Club</h1>
+        <h4>Ququing System for MU Shooting Club</h4>
         <form id="registerForm">
-            <input type="text" id="name" placeholder="ชื่อ-นามสกุล / ชื่อเล่น" required>
+            <input type="text" id="name" placeholder="ชื่อเล่น/Nickname" required>
             <select id="gunType">
-                <option value="ปืนสั้น">ปืนสั้น</option>
-                <option value="ปืนยาว">ปืนยาว</option>
+                <option value="" selected disabled>ประเภทปืน/Gun Type</option>
+                <option value="ปืนสั้น">ปืนสั้น/Air Pistol</option>
+                <option value="ปืนยาว">ปืนยาว/Air Rifle</option>
             </select>
             <select id="round">
-                <option value="1">รอบที่ 1</option>
-                <option value="2">รอบที่ 2</option>
+                <option value="" selected disabled>รอบที่ยิง/Round</option>
+                <option value="1">รอบที่ 1/Round 1</option>
+                <option value="2">รอบที่ 2/Round 2</option>
             </select>
-            <button type="submit">รับบัตรคิว</button>
+            <button type="submit">OK</button>
         </form>
         <div id="result" style="margin-top: 15px; text-align: center; font-weight: bold; color: #27ae60;"></div>
     </div>
 
     <!-- ส่วนที่ 2: หน้าจัดการคิวสำหรับแอดมิน (ต้องใส่รหัสผ่าน) -->
     <div id="viewAdmin" class="container hidden">
-        <h2>🔒 จัดการคิว (สำหรับเจ้าหน้าที่)</h2>
+        <h2 style="color: #e74c3c;">🔒 จัดการคิว (STAFF ONLY)</h2>
         <button onclick="backToRegister()" style="background: #95a5a6; margin-bottom: 15px;">⬅ กลับสู่หน้าลงทะเบียน</button>
         
         <!-- กล่องสร้าง QR Code อัตโนมัติจากลิงก์ปัจจุบัน -->
         <div class="qr-box">
-            <h3 style="margin: 0 0 5px 0; color: #2c3e50;">🖨️ QR Code ให้ผู้เข้าร่วมสแกน</h3>
+            <h3 style="margin: 0 0 5px 0; color: #2c3e50;">🖨️ QR Code ให้ Walk-in สแกน</h3>
             <p style="font-size: 13px; color: #666; margin-top:0;">สร้างจากลิงก์ของเครื่องนี้โดยอัตโนมัติ</p>
             <div id="adminQRCode"></div>
-            <button onclick="generateAdminQR()" style="background: #3498db; width: auto; padding: 6px 12px; font-size: 13px;">รีเฟรช QR Code</button>
+            <button onclick="generateAdminQR()" style="background: #3dba3d; width: auto; padding: 6px 12px; font-size: 13px;">รีเฟรช QR Code</button>
         </div>
 
         <div class="queue-box">
             <div class="queue-col">
-                <h3 style="color: #2980b9; margin-top:0;">📌 คิวปืนสั้น</h3>
+                <h3 style="color: #a31fc1; margin-top:0;">📌 คิวปืนสั้น</h3>
                 <div id="shortQueueList">กำลังโหลด...</div>
             </div>
             <div class="queue-col">
-                <h3 style="color: #8e44ad; margin-top:0;">📌 คิวปืนยาว</h3>
+                <h3 style="color: #449bad; margin-top:0;">📌 คิวปืนยาว</h3>
                 <div id="longQueueList">กำลังโหลด...</div>
             </div>
         </div>
@@ -99,15 +69,26 @@
         let queues = JSON.parse(localStorage.getItem('shooting_queues')) || [];
 
         // ฟังก์ชันตรวจสอบรหัสผ่านเพื่อเข้าหน้าแอดมิน
+        var count = 0
         function openAdmin() {
-            const password = prompt('กรุณากรอกรหัสผ่านผู้ดูแลระบบ:');
+            const password = prompt('กรอก Password (STAFF ONLY):');
             if (password === 'shooting888') {
                 document.getElementById('viewRegister').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 renderQueues();
                 generateAdminQR(); // สร้าง QR Code ทันทีที่เข้าหน้าแอดมิน
             } else if (password !== null) {
-                alert('รหัสผ่านไม่ถูกต้อง!');
+                count += 1;
+                if (count === 1) {
+                    alert('รหัสผ่านไม่ถูกต้อง!');
+                }
+                else if (count === 2) {
+                    alert ('เอ๊ะ! ผิดอีกแล้วนะ...ลองคิดดี ๆ');
+                } else if (count === 3) {
+                    alert ('ครั้งที่ 4 นี่อย่าให้มีนะ');
+                } else if (count === 4) {
+                    alert ('ไม่ใช่ละ ๆ นี่มันตัวปลอม!')
+                }
             }
         }
 

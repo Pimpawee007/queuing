@@ -1,0 +1,142 @@
+* {
+    font-family: 'Anuphan', sans-serif;
+}
+
+#clubname {
+    color: navy;
+    font-style: italic;
+}
+
+h4 {
+    text-decoration: underline;
+    color: rgba(128, 128, 128, 0.616);
+
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    position: relative;
+    text-align: center;
+    line-height: 20px;
+}
+
+input, select, button {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+}
+        
+button {
+    background: #34dba6;
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #249750;
+}
+
+/* ปุ่มแอดมินมุมบนขวา */
+.admin-btn-corner {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #6c0b01;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    width: auto;
+    cursor: pointer;
+}
+
+.admin-btn-corner:hover {
+    background: #c75353;
+    color: black;
+}
+
+.hidden {
+    display: none;
+}
+
+.queue-box {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+        
+.queue-col {
+    background: #ecf0f1;
+    padding: 15px;
+    border-radius: 6px;
+}
+        
+.queue-item {
+    background: white;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 5px solid #3498db;
+}
+        
+.badge {
+    background: #e74c3c;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+        
+.btn-action {
+    width: auto;
+    padding: 6px 12px;
+    font-size: 14px;
+    margin: 0 2px;
+}
+        
+.btn-call {
+    background: #27ae60;
+}
+        
+.btn-del {
+    background: #c0392b;
+}
+        
+/* กล่องแสดง QR Code ของแอดมิน */
+.qr-box {
+    background: #fdfdfd;
+    border: 1px dashed #ccc;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#adminQRCode {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+}
+
+#adminQRCode img {
+    padding: 5px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
