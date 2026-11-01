@@ -38,7 +38,7 @@ app.post('/api/register', (req, res) => {
 
     let qId;
     // แยกเลขคิว S (Short) และ L (Long)
-    if (gunType === 'ปืนสั้น') {
+    if (gunType === 'ปืนสั้น/Pistol') {
         data.shortCount = (data.shortCount || 0) + 1;
         qId = 'S' + data.shortCount;
     } else {
