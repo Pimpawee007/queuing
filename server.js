@@ -1,27 +1,27 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors'); // ป้องกันปัญหา Cross-Origin จากอุปกรณ์อื่น
+const cors = require('cors');
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// ตั้งค่าให้เปิดไฟล์หน้าเว็บจากโฟลเดอร์ public
+// เปิดไฟล์หน้าเว็บจากโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 const dataFile = path.join(__dirname, 'data.json');
 
-// ฟังก์ชันอ่านข้อมูลจากไฟล์ (ถ้าไม่มีไฟล์จะสร้างโครงสร้างพื้นฐาน)
+// อ่านข้อมูลคิว
 function loadData() {
     if (fs.existsSync(dataFile)) {
         return JSON.parse(fs.readFileSync(dataFile, 'utf8'));
     }
-    return { queues: [], totalCount: 0 };
+    // เพิ่มตัวนับแยกประเภท
+    return { queues: [], shortCount: 0, longCount: 0 }; 
 }
 
-// ฟังก์ชันบันทึกข้อมูลลงไฟล์ (ป้องกันข้อมูลหายเมื่อปิดโปรแกรม)
 function saveData(data) {
     fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 }
@@ -36,9 +36,18 @@ app.post('/api/register', (req, res) => {
     const data = loadData();
     const { name, gunType, round } = req.body;
 
-    data.totalCount += 1;
+    let qId;
+    // แยกเลขคิว S (Short) และ L (Long)
+    if (gunType === 'ปืนสั้น') {
+        data.shortCount = (data.shortCount || 0) + 1;
+        qId = 'S' + data.shortCount;
+    } else {
+        data.longCount = (data.longCount || 0) + 1;
+        qId = 'L' + data.longCount;
+    }
+
     const newQueue = {
-        id: data.totalCount,
+        id: qId,
         name: name,
         gunType: gunType,
         round: round,
@@ -48,16 +57,13 @@ app.post('/api/register', (req, res) => {
     data.queues.push(newQueue);
     saveData(data);
 
-    // คำนวณคิวก่อนหน้า
-    const waitingBefore = data.queues.filter(q => q.gunType === gunType && q.status === 'รอเรียก' && q.id < data.totalCount).length;
-
-    res.json({ success: true, queue: newQueue, waitingBefore, totalCount: data.totalCount });
+    res.json({ success: true, qId: qId });
 });
 
-// API: อัปเดตสถานะคิว (เรียก / ข้าม)
+// API: อัปเดตสถานะคิว
 app.put('/api/status', (req, res) => {
     const data = loadData();
-    const { id, action } = req.body; // action = 'call' หรือ 'finish'
+    const { id, action } = req.body; 
     
     const q = data.queues.find(item => item.id === id);
     if (q) {
@@ -75,13 +81,10 @@ app.put('/api/status', (req, res) => {
 
 // API: รีเซ็ตระบบ
 app.post('/api/reset', (req, res) => {
-    saveData({ queues: [], totalCount: 0 });
+    saveData({ queues: [], shortCount: 0, longCount: 0 });
     res.json({ success: true });
 });
 
-// รันเซิร์ฟเวอร์ (0.0.0.0 เพื่อให้อุปกรณ์อื่นในวง Wi-Fi เข้ามาได้)
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 เซิร์ฟเวอร์เริ่มทำงานแล้ว!`);
-    console.log(`👉 เปิดหน้าจอแอดมิน (บนเครื่องนี้): http://localhost:${PORT}`);
-    console.log(`📱 ลิงก์สำหรับมือถือสแกน: ใช้ IP วงแลนของเครื่องนี้ (เช่น http://192.168.x.x:${PORT})\n`);
+    console.log(`Server running on port ${PORT}`);
 });

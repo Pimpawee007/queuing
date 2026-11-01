@@ -12,11 +12,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-    <!-- ส่วนที่ 1: หน้าลงทะเบียน (สำหรับผู้เข้าร่วมสแกนผ่านมือถือ) -->
+    <!-- ส่วนที่ 1: หน้าลงทะเบียน -->
     <div id="viewRegister" class="container">
-        <!-- ปุ่มไปหน้าแอดมินมุมบนขวา -->
         <button class="admin-btn-corner" onclick="openAdmin()">⚙️ Admin</button>
-        
         <img src="mushlogo.png" alt="Club's logo" width="100">
         <h1>🎯 ลงทะเบียนคิว</h1>
         <h1 id="clubname">MU Shooting Club</h1>
@@ -33,20 +31,31 @@
                 <option value="1">รอบที่ 1/Round 1</option>
                 <option value="2">รอบที่ 2/Round 2</option>
             </select>
-            <button type="submit">OK</button>
+            <button type="submit" id="btnSubmit">OK</button>
         </form>
-        <div id="result" style="margin-top: 15px; text-align: center; font-weight: bold; color: #27ae60; min-height: 80px;"></div>
     </div>
 
-    <!-- ส่วนที่ 2: หน้าจัดการคิวสำหรับแอดมิน (ต้องใส่รหัสผ่าน) -->
+    <!-- ส่วนที่ 2: หน้าติดตามสถานะคิว (สำหรับผู้เข้าร่วม) -->
+    <div id="viewUserStatus" class="container hidden" style="text-align: center;">
+        <h2 style="color: #2980b9;">📡 สถานะคิวของคุณ</h2>
+        <div style="background: #ecf0f1; padding: 20px; border-radius: 10px; margin: 15px 0;">
+            <h1 id="userQId" style="font-size: 54px; color: #e74c3c; margin: 10px 0;">-</h1>
+            <h3 id="userQGunType" style="margin: 5px 0;">-</h3>
+        </div>
+        <h3 id="userQStatus" style="color: #f39c12;">สถานะ: กำลังโหลด...</h3>
+        <p id="userQWaitCount" style="font-size: 18px; color: #7f8c8d;">-</p>
+        
+        <p style="font-size: 13px; color: #95a5a6; margin-top: 20px;">*หน้านี้จะอัปเดตอัตโนมัติ ไม่ต้องกดรีเฟรช</p>
+        <button onclick="location.reload()" style="background: #bdc3c7; margin-top: 10px; color: #333;">⬅ ลงทะเบียนให้เพื่อน (เริ่มใหม่)</button>
+    </div>
+
+    <!-- ส่วนที่ 3: หน้าแอดมิน -->
     <div id="viewAdmin" class="container hidden">
         <h2 style="color: #e74c3c;">🔒 จัดการคิว (STAFF ONLY)</h2>
         <button onclick="backToRegister()" style="background: #95a5a6; margin-bottom: 15px;">⬅ กลับสู่หน้าลงทะเบียน</button>
         
-        <!-- กล่องสร้าง QR Code ให้คนสแกน -->
         <div class="qr-box">
             <h3 style="margin: 0 0 5px 0; color: #2c3e50;">🖨️ QR Code ให้ Walk-in สแกน</h3>
-            <p style="font-size: 13px; color: #666; margin-top:0;">สร้างจากลิงก์ Render อัตโนมัติ</p>
             <div id="adminQRCode"></div>
             <button onclick="generateAdminQR()" style="background: #3dba3d; width: auto; padding: 6px 12px; font-size: 13px;">รีเฟรช QR Code</button>
         </div>
@@ -65,19 +74,19 @@
     </div>
 
     <script>
+        let myQueueId = null;
+        let myGunType = null;
         var count = 0;
 
-        // เช็คว่าก่อนหน้านี้ค้างอยู่หน้าแอดมินหรือไม่
         window.onload = function() {
             if (sessionStorage.getItem('currentView') === 'admin') {
                 document.getElementById('viewRegister').classList.add('hidden');
                 document.getElementById('viewAdmin').classList.remove('hidden');
-                fetchQueues();
+                fetchAllQueues();
                 setTimeout(generateAdminQR, 500);
             }
         };
 
-        // ฟังก์ชันตรวจสอบรหัสผ่านเพื่อเข้าหน้าแอดมิน
         function openAdmin() {
             const password = prompt('กรอก Password (STAFF ONLY):');
             if (password === 'shooting888') {
@@ -85,7 +94,7 @@
                 document.getElementById('viewAdmin').classList.remove('hidden');
                 sessionStorage.setItem('currentView', 'admin');
                 count = 0;
-                fetchQueues();
+                fetchAllQueues();
                 setTimeout(generateAdminQR, 500); 
             } else if (password !== null) {
                 count += 1;
@@ -96,14 +105,12 @@
             }
         }
 
-        // กลับหน้าลงทะเบียน
         function backToRegister() {
             document.getElementById('viewAdmin').classList.add('hidden');
             document.getElementById('viewRegister').classList.remove('hidden');
             sessionStorage.removeItem('currentView');
         }
 
-        // ฟังก์ชันสร้าง QR Code อัตโนมัติจาก URL ปัจจุบัน
         function generateAdminQR() {
             const qrContainer = document.getElementById('adminQRCode');
             if (!qrContainer) return;
@@ -124,12 +131,16 @@
             });
         }
 
-        // บันทึกการลงทะเบียนยิงส่งไปยัง Backend บน Render
+        // กดลงทะเบียน
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('name').value.trim();
             const gunType = document.getElementById('gunType').value;
             const round = document.getElementById('round').value;
+
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerText = 'กำลังโหลด...';
 
             try {
                 const response = await fetch('/api/register', {
@@ -141,94 +152,134 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    document.getElementById('result').innerHTML = `ลงทะเบียนสำเร็จ!<br>เลขคิวของคุณ: <span style="font-size:24px; color:#e74c3c;">#${data.totalCount}</span><br>(${gunType} - รอบที่ ${round})<br>จำนวนคิวก่อนหน้า: ${data.waitingBefore} คิว`;
+                    // จำข้อมูลคิวของตัวเองไว้ในตัวแปร
+                    myQueueId = data.qId;
+                    myGunType = gunType;
                     
-                    document.getElementById('name').value = '';
-                    document.getElementById('gunType').value = '';
-                    document.getElementById('round').value = '';
+                    // เปลี่ยนหน้าไปโชว์สถานะ
+                    document.getElementById('viewRegister').classList.add('hidden');
+                    document.getElementById('viewUserStatus').classList.remove('hidden');
 
-                    setTimeout(() => {
-                        document.getElementById('result').innerHTML = '';
-                    }, 5000);
-
-                    fetchQueues(); // อัปเดตคิวทันที
+                    fetchAllQueues(); // ดึงข้อมูลทันที
                 }
             } catch (error) {
                 alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'OK';
             }
         });
 
-        // ดึงข้อมูลคิวทั้งหมดจาก Backend มาแสดงผล
-        async function fetchQueues() {
+        // ดึงข้อมูลกลางสำหรับทุกคน (เรียกทุกๆ 2 วินาที)
+        async function fetchAllQueues() {
             try {
                 const response = await fetch('/api/queues');
                 const queues = await response.json();
                 
-                const shortList = document.getElementById('shortQueueList');
-                const longList = document.getElementById('longQueueList');
-                shortList.innerHTML = '';
-                longList.innerHTML = '';
-
-                let hasShort = false;
-                let hasLong = false;
-
-                queues.forEach((q) => {
-                    if (q.status === 'เสร็จสิ้น') return;
-
-                    const item = document.createElement('div');
-                    item.className = 'queue-item';
-                    item.innerHTML = `
-                        <div>
-                            <b>#${q.id}</b> ${q.name} <span class="badge">รอบ ${q.round}</span><br>
-                            <small>สถานะ: <span style="color:${q.status === 'กำลังยิง' ? '#e67e22':'#27ae60'}">${q.status}</span></small>
-                        </div>
-                        <div>
-                            <button class="btn-action btn-call" onclick="updateStatus(${q.id}, 'call')">${q.status === 'รอเรียก' ? 'เรียก' : 'เสร็จสิ้น'}</button>
-                            <button class="btn-action btn-del" onclick="updateStatus(${q.id}, 'finish')">ข้าม/ลบ</button>
-                        </div>
-                    `;
-
-                    if (q.gunType === 'ปืนสั้น') {
-                        hasShort = true;
-                        shortList.appendChild(item);
-                    } else {
-                        hasLong = true;
-                        longList.appendChild(item);
-                    }
-                });
-
-                if (!hasShort) shortList.innerHTML = '<p style="color:#7f8c8d; text-align:center;">ไม่มีคิวรอ</p>';
-                if (!hasLong) longList.innerHTML = '<p style="color:#7f8c8d; text-align:center;">ไม่มีคิวรอ</p>';
+                // อัปเดตหน้าแอดมิน (ถ้าเปิดอยู่)
+                if (!document.getElementById('viewAdmin').classList.contains('hidden')) {
+                    updateAdminUI(queues);
+                }
+                
+                // อัปเดตหน้า User (ถ้าเปิดอยู่)
+                if (!document.getElementById('viewUserStatus').classList.contains('hidden') && myQueueId) {
+                    updateUserStatusUI(queues);
+                }
             } catch (error) {
                 console.error('Error fetching queues:', error);
             }
         }
 
-        // อัปเดตสถานะคิว (เรียก / ข้าม)
+        // ฟังก์ชันวาดหน้าแอดมิน
+        function updateAdminUI(queues) {
+            const shortList = document.getElementById('shortQueueList');
+            const longList = document.getElementById('longQueueList');
+            shortList.innerHTML = '';
+            longList.innerHTML = '';
+
+            let hasShort = false;
+            let hasLong = false;
+
+            queues.forEach((q) => {
+                if (q.status === 'เสร็จสิ้น') return;
+
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                // ใส่ single quote ครอบ q.id เพราะตอนนี้มันเป็นตัวอักษร (เช่น 'S1')
+                item.innerHTML = `
+                    <div>
+                        <b>#${q.id}</b> ${q.name} <span class="badge">รอบ ${q.round}</span><br>
+                        <small>สถานะ: <span style="color:${q.status === 'กำลังยิง' ? '#e67e22':'#27ae60'}">${q.status}</span></small>
+                    </div>
+                    <div>
+                        <button class="btn-action btn-call" onclick="updateStatus('${q.id}', 'call')">${q.status === 'รอเรียก' ? 'เรียก' : 'เสร็จสิ้น'}</button>
+                        <button class="btn-action btn-del" onclick="updateStatus('${q.id}', 'finish')">ข้าม/ลบ</button>
+                    </div>
+                `;
+
+                if (q.gunType === 'ปืนสั้น') {
+                    hasShort = true;
+                    shortList.appendChild(item);
+                } else {
+                    hasLong = true;
+                    longList.appendChild(item);
+                }
+            });
+
+            if (!hasShort) shortList.innerHTML = '<p style="color:#7f8c8d; text-align:center;">ไม่มีคิวรอ</p>';
+            if (!hasLong) longList.innerHTML = '<p style="color:#7f8c8d; text-align:center;">ไม่มีคิวรอ</p>';
+        }
+
+        // ฟังก์ชันวาดหน้าผู้เข้าร่วม (Live Tracking)
+        function updateUserStatusUI(queues) {
+            const q = queues.find(item => item.id === myQueueId);
+            if (!q) return;
+
+            document.getElementById('userQId').innerText = q.id;
+            document.getElementById('userQGunType').innerText = `${q.gunType} - รอบที่ ${q.round}`;
+            
+            const statusEl = document.getElementById('userQStatus');
+            const waitEl = document.getElementById('userQWaitCount');
+
+            if (q.status === 'รอเรียก') {
+                statusEl.innerHTML = `สถานะ: <span style="color:#e67e22;">กำลังรอคิว ⏳</span>`;
+                // คำนวณคิวก่อนหน้า (เฉพาะปืนประเภทเดียวกันที่ยังรอเรียกอยู่)
+                const waitingList = queues.filter(item => item.gunType === myGunType && item.status === 'รอเรียก');
+                const myIndex = waitingList.findIndex(item => item.id === myQueueId);
+                
+                waitEl.innerText = `มีคิวก่อนหน้าคุณ: ${myIndex} คิว`;
+                waitEl.style.color = '#7f8c8d';
+            } else if (q.status === 'กำลังยิง') {
+                statusEl.innerHTML = `สถานะ: <span style="color:#27ae60;">ถึงคิวของคุณแล้ว! 🎯</span>`;
+                waitEl.innerText = 'โปรดติดต่อเจ้าหน้าที่ประจำช่องยิง';
+                waitEl.style.color = '#27ae60';
+            } else if (q.status === 'เสร็จสิ้น') {
+                statusEl.innerHTML = `สถานะ: <span style="color:#bdc3c7;">เสร็จสิ้นแล้ว ✔️</span>`;
+                waitEl.innerText = 'ขอบคุณที่เข้าร่วมกิจกรรมครับ';
+                waitEl.style.color = '#7f8c8d';
+            }
+        }
+
+        // กดอัปเดตสถานะคิว (ฝั่งแอดมิน)
         async function updateStatus(id, action) {
             await fetch('/api/status', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, action })
             });
-            fetchQueues();
+            fetchAllQueues();
         }
 
-        // รีเซ็ตคิวทั้งหมด
         async function resetData() {
             if (confirm('ต้องการล้างข้อมูลคิวทั้งหมดใช่หรือไม่?')) {
                 await fetch('/api/reset', { method: 'POST' });
-                fetchQueues();
+                fetchAllQueues();
                 alert('รีเซ็ตเรียบร้อยแล้ว');
             }
         }
 
-        // อัปเดตหน้าแอดมินอัตโนมัติทุกๆ 2 วินาที
-        setInterval(() => {
-            if (!document.getElementById('viewAdmin').classList.contains('hidden')) {
-                fetchQueues();
-            }
-        }, 2000);
+        // ปิงเซิร์ฟเวอร์ทุกๆ 2 วินาทีเพื่ออัปเดตข้อมูลอัตโนมัติ
+        setInterval(fetchAllQueues, 2000);
     </script>
 </body>
 </html>
