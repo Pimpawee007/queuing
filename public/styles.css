@@ -48,8 +48,9 @@ button:hover {
     background: #34dba6;
 }
 
-#restart:hover {
+.restart:hover {
     background: #e21700;
+    color: black;
 }
 
 /* ปุ่มแอดมินมุมบนขวา */
