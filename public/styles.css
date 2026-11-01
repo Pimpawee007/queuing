@@ -48,6 +48,12 @@ button:hover {
     background: #34dba6;
 }
 
+.restart {
+    background: #530101;
+    margin-top: 10px;
+    color: #ffffff;
+}
+
 .restart:hover {
     background: #e21700;
     color: black;
