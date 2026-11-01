@@ -48,6 +48,10 @@ button:hover {
     background: #34dba6;
 }
 
+#restart:hover {
+    background: #e21700;
+}
+
 /* ปุ่มแอดมินมุมบนขวา */
 .admin-btn-corner {
     position: absolute;
