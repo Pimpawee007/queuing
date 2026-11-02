@@ -249,7 +249,7 @@
             if (q.status === 'รอเรียก') {
                 statusEl.innerHTML = `สถานะ: <span style="color:#e67e22;">กำลังรอคิว ⏳</span>`;
                 // คำนวณคิวก่อนหน้า (เฉพาะปืนประเภทเดียวกันที่ยังรอเรียกอยู่)
-                const waitingList = queues.filter(item => item.gunType === myGunType && item.status === 'รอเรียก');
+                const waitingList = queues.filter(item => item.gunType === myGunType && item.status === 'เสร็จสิ้น');
                 const myIndex = waitingList.findIndex(item => item.id === myQueueId);
                 
                 waitEl.innerText = `มีคิวก่อนหน้าคุณ: ${myIndex} คิว`;
