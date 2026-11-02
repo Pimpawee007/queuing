@@ -276,10 +276,10 @@
         }
 
         async function resetData() {
-            if (confirm('ต้องการล้างข้อมูลคิวทั้งหมดใช่หรือไม่?')) {
+            if (confirm('ต้องการรีเซ็ตคิวทั้งหมดใช่หรือไม่?')) {
                 await fetch('/api/reset', { method: 'POST' });
                 fetchAllQueues();
-                alert('รีเซ็ตเรียบร้อยแล้ว');
+                alert('Reset Completed🎆');
             }
         }
 
