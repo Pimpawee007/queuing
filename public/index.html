@@ -47,7 +47,7 @@
             <h3 id="userQGunType" style="margin: 0; font-size: 22px;">-</h3>
         </div>
         
-        <h3 id="userQStatus" style="color: #f39c12; margin-top: 25px;">สถานะ: กำลังโหลด...</h3>
+        <h3 id="userQStatus" style="color: #f39c12; margin-top: 25px;">Status: Loading...</h3>
         <p id="userQWaitCount" style="font-size: 18px; color: #7f8c8d; margin-bottom: 25px;">-</p>
         
         <p style="font-size: 13px; color: #95a5a6; margin-top: 20px; line-height: 1.6;">โปรดแคปหน้าจอเก็บไว้ หากรีเฟรช หน้านี้จะหาย<br>Please capture the screen. If you refresh, the information will be lost.</p>
@@ -214,7 +214,7 @@
                 item.innerHTML = `
                     <div>
                         <b>#${q.id}</b> ${q.name} <span class="badge">รอบ ${q.round}</span><br>
-                        <small>สถานะ: <span style="color:${q.status === 'กำลังยิง' ? '#e67e22':'#27ae60'}">${q.status}</span></small>
+                        <small>Status: <span style="color:${q.status === 'Athlete to the line.' ? '#e67e22':'#27ae60'}">${q.status}</span></small>
                     </div>
                     <div>
                         <button class="btn-action btn-call" onclick="updateStatus('${q.id}', 'call')">${q.status === 'รอเรียก' ? 'เรียก' : 'เสร็จสิ้น'}</button>
@@ -247,20 +247,20 @@
             const waitEl = document.getElementById('userQWaitCount');
 
             if (q.status === 'รอเรียก') {
-                statusEl.innerHTML = `สถานะ: <span style="color:#e67e22;">กำลังรอคิว ⏳</span>`;
-                // คำนวณคิวก่อนหน้า (เฉพาะปืนประเภทเดียวกันที่ยังรอเรียกอยู่)
-                const waitingList = queues.filter(item => item.gunType === myGunType && item.status === 'เสร็จสิ้น');
+                statusEl.innerHTML = `Status: <span style="color:#e67e22;">Waiting ⏳</span>`;
+                // คำนวณคิวก่อนหน้า (ดึงคนที่ยังไม่เสร็จสิ้นทั้งหมดมาเรียงคิว)
+                const waitingList = queues.filter(item => item.gunType === myGunType && item.status !== 'เสร็จสิ้น');
                 const myIndex = waitingList.findIndex(item => item.id === myQueueId);
                 
-                waitEl.innerText = `มีคิวก่อนหน้าคุณ: ${myIndex} คิว`;
+                waitEl.innerText = `Queue before: ${myIndex}`;
                 waitEl.style.color = '#7f8c8d';
             } else if (q.status === 'กำลังยิง') {
-                statusEl.innerHTML = `สถานะ: <span style="color:#27ae60;">ถึงคิวของคุณแล้ว! 🎯</span>`;
-                waitEl.innerText = 'โปรดติดต่อเจ้าหน้าที่ประจำช่องยิง';
+                statusEl.innerHTML = `Status: <span style="color:#27ae60;">Your turn! 🎯</span>`;
+                waitEl.innerText = 'Please report to the staff.';
                 waitEl.style.color = '#27ae60';
             } else if (q.status === 'เสร็จสิ้น') {
-                statusEl.innerHTML = `สถานะ: <span style="color:#bdc3c7;">เสร็จสิ้นแล้ว ✔️</span>`;
-                waitEl.innerText = 'ขอบคุณที่เข้าร่วมกิจกรรมครับ';
+                statusEl.innerHTML = `Status: <span style="color:#bdc3c7;">Complete ✔️</span>`;
+                waitEl.innerText = 'Thank you!';
                 waitEl.style.color = '#7f8c8d';
             }
         }
